@@ -8,6 +8,8 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 
+#testing
+
 EPISODES = 1000 #Maximum number of episodes
 
 #DQN Agent for the Cartpole
