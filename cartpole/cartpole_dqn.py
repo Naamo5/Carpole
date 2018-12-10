@@ -128,18 +128,22 @@ class DQNAgent:
         #Tip 2: What is the Q-value of the action taken at the last state of the episode?
         reward = np.array(reward)
         done = np.array(done)
+        action = np.array(action)
+
         not_done = np.logical_not(done)
         Y = np.zeros(batch_size)
         Y[done] = reward[done]
         Y[not_done] = reward[not_done] + self.discount_factor * \
                       np.max(target_val[not_done,:],1)
+        Qsa = target[np.arange(batch_size),action]
+        print(Qsa.shape)
+        print(Y.shape)
 
 ###############################################################################
 ###############################################################################
 
         #Train the inner loop network
-        self.model.fit(target, Y, batch_size=self.batch_size,
-                       epochs=1, verbose=0)
+        self.model.fit(Qsa, Y, batch_size=self.batch_size, epochs=1, verbose=0)
         return
     #Plots the score per episode as well as the maximum q value per episode, averaged over precollected states.
     def plot_data(self, episodes, scores, max_q_mean):
