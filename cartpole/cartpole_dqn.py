@@ -8,7 +8,6 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 
-#testing
 
 EPISODES = 1000 #Maximum number of episodes
 
@@ -17,7 +16,7 @@ EPISODES = 1000 #Maximum number of episodes
 class DQNAgent:
     #Constructor for the agent (invoked when DQN is first called in main)
     def __init__(self, state_size, action_size):
-        self.check_solve = False	#If True, stop if you satisfy solution confition
+        self.check_solve = False    #If True, stop if you satisfy solution confition
         self.render = False        #If you want to see Cartpole learning, then change to True
 
         #Get size of state and action
@@ -79,8 +78,20 @@ class DQNAgent:
         #Insert your e-greedy policy code here
         #Tip 1: Use the random package to generate a random action.
         #Tip 2: Use keras.model.predict() to compute Q-values from the state.
-        action = random.randrange(self.action_size)
-        return action
+
+        e = 0.1
+        is_greedy = np.random.choice([True,False],p=[1-e,e])
+        # I think it should be model, but could be target_model???
+        Qs = self.model.predict(state)
+
+        # in case multiple actions are greediest, will choose random one
+        # This code is copied from previous lab, should work for any amount of actions
+        greedy = np.argwhere(Qs==np.amax(Qs)).flatten().tolist()
+        greedy = random.choice(greedy)
+        other = list(range(self.action_size))
+        other.remove(greedy)
+        non_greedy = random.choice(other)
+        return greedy if is_greedy else non_greedy
 ###############################################################################
 ###############################################################################
     #Save sample <s,a,r,s'> to the replay memory
@@ -108,19 +119,26 @@ class DQNAgent:
         target = self.model.predict(update_input) #Generate target values for training the inner loop network using the network model
         target_val = self.target_model.predict(update_target) #Generate the target values for training the outer loop target network
 
+
         #Q Learning: get maximum Q value at s' from target network
 ###############################################################################
 ###############################################################################
-        #Insert your Q-learning code here
+
         #Tip 1: Observe that the Q-values are stored in the variable target
         #Tip 2: What is the Q-value of the action taken at the last state of the episode?
-        for i in range(self.batch_size): #For every batch
-            target[i][action[i]] = random.randint(0,1)
+        reward = np.array(reward)
+        done = np.array(done)
+        not_done = np.logical_not(done)
+        Y = np.zeros(batch_size)
+        Y[done] = reward[done]
+        Y[not_done] = reward[not_done] + self.discount_factor * \
+                      np.max(target_val[not_done,:],1)
+
 ###############################################################################
 ###############################################################################
 
         #Train the inner loop network
-        self.model.fit(update_input, target, batch_size=self.batch_size,
+        self.model.fit(target, Y, batch_size=self.batch_size,
                        epochs=1, verbose=0)
         return
     #Plots the score per episode as well as the maximum q value per episode, averaged over precollected states.
